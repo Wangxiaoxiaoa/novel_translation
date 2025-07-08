@@ -1,0 +1,335 @@
+# 小说翻译修改器配置文件
+# Novel Translation Modifier Configuration
+
+# OpenAI API配置
+openai:
+  api_key: "your-openai-api-key-here"
+  base_url: "https://api.openai.com/v1"  # 支持其他OpenAI兼容API
+  model: "gpt-4-turbo-preview"
+  temperature: 0.7
+  max_tokens: 4000
+
+# 翻译配置
+translation:
+  source_language: "zh"  # 源语言
+  target_language: "en"  # 目标语言
+  preserve_formatting: true  # 保持格式
+  cultural_adaptation: true  # 文化适配
+  
+# 支持的语言列表
+supported_languages:
+  - code: "en"
+    name: "English"
+    culture: "Western"
+  - code: "ja"
+    name: "Japanese"
+    culture: "Japanese"
+  - code: "ko"
+    name: "Korean"
+    culture: "Korean"
+  - code: "fr"
+    name: "French"
+    culture: "Western"
+  - code: "de"
+    name: "German"
+    culture: "Western"
+  - code: "es"
+    name: "Spanish"
+    culture: "Western"
+  - code: "ru"
+    name: "Russian"
+    culture: "Slavic"
+  - code: "ar"
+    name: "Arabic"
+    culture: "Middle Eastern"
+
+# 文档处理配置
+document:
+  input_formats: ["txt", "pdf", "docx"]
+  output_format: "txt"
+  encoding: "utf-8"
+  chunk_size: 2000  # 每个处理块的字符数
+  overlap: 200      # 块之间的重叠字符数
+
+# 章节分割配置
+chapter_splitting:
+  auto_detect: true
+  patterns:
+    - "第[零一二三四五六七八九十百千万\\d]+章"
+    - "Chapter \\d+"
+    - "第\\d+章"
+    - "卷[零一二三四五六七八九十百千万\\d]+"
+  min_chapter_length: 500  # 最小章节长度
+  max_chapter_length: 8000 # 最大章节长度
+
+# 智能体配置
+agents:
+  # 超级智能体配置 (NEW)
+  super:
+    agent_type: "super"
+    enabled: true
+    max_concurrent_tasks: 1
+    timeout: 1800  # 30分钟
+    advanced_features:
+      meta_cognition: true
+      consciousness_simulation: true
+      intuitive_reasoning: true
+      wisdom_synthesis: true
+      self_improvement: true
+      multi_engine_coordination: true
+      creative_problem_solving: true
+      expert_consultation: true
+      ethical_reasoning: true
+      safety_monitoring: true
+      continuous_learning: true
+    performance_config:
+      reasoning_depth: 10
+      creativity_level: 9
+      expertise_threshold: 8.5
+      confidence_threshold: 0.85
+      quality_threshold: 9.0
+    resource_limits:
+      max_memory_usage: "8GB"
+      max_processing_time: 3600
+      max_reasoning_steps: 1000
+      max_creative_iterations: 50
+  
+  # 增强解析智能体配置
+  parser:
+    agent_type: "parser"
+    enabled: true
+    max_concurrent_tasks: 3
+    timeout: 600
+    advanced_features:
+      deep_document_parsing: true
+      intelligent_chapter_splitting: true
+      plot_structure_analysis: true
+      character_network_analysis: true
+      writing_style_analysis: true
+      timeline_extraction: true
+      emotion_analysis: true
+      knowledge_graph_building: true
+      content_understanding: true
+      complexity_scoring: true
+      readability_analysis: true
+      genre_classification: true
+    parsing_config:
+      min_chapter_length: 500
+      max_chapter_length: 10000
+      chapter_splitting_methods:
+        - "semantic"
+        - "structural" 
+        - "thematic"
+        - "emotional"
+      complexity_thresholds:
+        simple: 0.3
+        medium: 0.6
+        complex: 0.9
+
+  translator:
+    agent_type: "translator"
+    enabled: true
+    max_concurrent_tasks: 2
+    timeout: 600
+    advanced_features:
+      multi_strategy_translation: true
+      deep_cultural_adaptation: true
+      dialogue_optimization: true
+      style_transfer: true
+      quality_assessment: true
+      adaptive_improvement: true
+      translation_memory: true
+    
+  memory:
+    agent_type: "memory"
+    enabled: true
+    max_concurrent_tasks: 5
+    timeout: 200
+    advanced_features:
+      vector_storage: true
+      temporal_memory: true
+      semantic_memory: true
+      episodic_memory: true
+      relationship_analysis: true
+      contextual_retrieval: true
+      memory_consolidation: true
+      importance_calculation: true
+    
+  editor:
+    agent_type: "editor" 
+    enabled: true
+    max_concurrent_tasks: 2
+    timeout: 400
+    advanced_features:
+      comprehensive_editing: true
+      consistency_editing: true
+      style_editing: true
+      flow_editing: true
+      dialogue_editing: true
+      narrative_editing: true
+      quality_enhancement: true
+      version_management: true
+    
+  quality:
+    agent_type: "quality"
+    enabled: true
+    max_concurrent_tasks: 3
+    timeout: 300
+    advanced_features:
+      comprehensive_assessment: true
+      accuracy_assessment: true
+      fluency_assessment: true
+      consistency_assessment: true
+      cultural_assessment: true
+      style_assessment: true
+      readability_assessment: true
+      issue_detection: true
+      auto_fixing: true
+    
+  coordinator:
+    agent_type: "coordinator"
+    enabled: true
+    max_concurrent_tasks: 10
+    timeout: 900
+    advanced_features:
+      intelligent_workflow: true
+      dynamic_task_allocation: true
+      quality_monitoring: true
+      progress_tracking: true
+      error_handling: true
+
+# 记忆系统配置
+memory:
+  character_tracking: true
+  plot_tracking: true
+  terminology_tracking: true
+  cultural_mapping: true
+  max_context_length: 16000
+  
+# 提示词模板配置
+prompts:
+  templates_dir: "prompts"
+  language: "zh"  # 提示词语言
+  
+# 输出配置
+output:
+  format: "chapters"  # 输出格式: chapters, full, both
+  directory: "output"
+  filename_pattern: "{title}_chapter_{number:03d}_{target_language}.txt"
+  include_metadata: true
+  
+# 质量控制配置
+quality_control:
+  consistency_check: true
+  cultural_appropriateness_check: true
+  plot_continuity_check: true
+  character_consistency_check: true
+  
+# 日志配置
+logging:
+  level: "INFO"
+  file: "logs/translation.log"
+  console: true
+  
+# 并发配置
+concurrency:
+  max_workers: 4
+  timeout: 300  # 超时时间（秒）
+  
+# 缓存配置
+cache:
+  enabled: true
+  directory: "cache"
+  ttl: 86400  # 缓存时间（秒）
+
+# 核心AI引擎配置 (NEW)
+ai_reasoning_engine:
+  enabled: true
+  reasoning_types:
+    - "logical"
+    - "causal"
+    - "temporal"
+    - "analogical"
+    - "creative"
+    - "emotional"
+  reasoning_config:
+    max_reasoning_depth: 10
+    confidence_threshold: 0.7
+    parallel_reasoning: true
+    uncertainty_handling: true
+    learning_enabled: true
+  performance:
+    max_concurrent_reasoners: 6
+    timeout: 300
+    memory_limit: "2GB"
+
+deep_learning_engine:
+  enabled: true
+  models:
+    - name: "gpt-4"
+      type: "causal_lm"
+      device: "auto"
+      max_length: 4096
+      batch_size: 1
+      temperature: 0.7
+      top_p: 0.9
+      top_k: 50
+    - name: "sentence-transformers/all-MiniLM-L6-v2"
+      type: "embedding"
+      device: "auto"
+  features:
+    model_ensemble: true
+    knowledge_distillation: true
+    fine_tuning: true
+    neural_architecture_search: false
+    reinforcement_learning: false
+    attention_analysis: true
+  performance:
+    max_gpu_memory: "6GB"
+    model_cache_size: "4GB"
+    parallel_inference: true
+
+creative_thinking_engine:
+  enabled: true
+  creative_methods:
+    - "brainstorming"
+    - "lateral_thinking"
+    - "mind_mapping"
+    - "scamper"
+    - "synectics"
+    - "morphological"
+    - "analogical_reasoning"
+  creativity_config:
+    idea_generation_count: 20
+    creativity_threshold: 0.7
+    feasibility_weight: 0.3
+    originality_weight: 0.4
+    usefulness_weight: 0.3
+    optimization_iterations: 5
+  inspiration_sources:
+    - "literature"
+    - "science"
+    - "nature"
+    - "technology"
+    - "culture"
+    - "history"
+
+expert_system:
+  enabled: true
+  domains:
+    - "literature"
+    - "linguistics"
+    - "cultural_studies"
+    - "translation_theory"
+    - "narrative_structure"
+    - "creative_writing"
+  expertise_config:
+    confidence_threshold: 0.8
+    expert_coordination: true
+    knowledge_base_updates: true
+    case_based_reasoning: true
+    explanation_generation: true
+  learning:
+    continuous_learning: true
+    feedback_integration: true
+    knowledge_expansion: true 
