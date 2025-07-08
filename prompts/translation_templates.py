@@ -19,6 +19,7 @@ class TranslationTemplates:
             "consistency_check": self._get_consistency_check_template(),
             "chapter_summary": self._get_chapter_summary_template(),
             "terminology_translation": self._get_terminology_translation_template(),
+            "flow_edit": self._get_flow_edit_template(), # New template for flow editing
         }
     
     def get_template(self, template_name: str) -> Optional[Template]:
@@ -38,7 +39,7 @@ class TranslationTemplates:
     def _get_base_translation_template(self) -> str:
         """基础翻译模板"""
         return """
-作为专业的小说翻译专家，请将以下中文小说内容翻译成{{ target_language }}，并进行适当的文化适配。
+作为专业的小说翻译专家，请将以下 {{ source_language_display_name | default('源语言') }} 小说内容翻译成 {{ target_language_display_name | default(target_language) }}，并进行适当的文化适配。
 
 ## 翻译要求：
 1. 保持原文的情感色彩和文学风格
@@ -448,4 +449,23 @@ if __name__ == "__main__":
     )
     
     print("Generated Translation Prompt:")
-    print(prompt) 
+    print(prompt)
+
+    def _get_flow_edit_template(self) -> str:
+        """流畅性编辑模板"""
+        return """
+作为一名专业文本编辑，请优化以下内容的流畅性和可读性。
+
+## 编辑要求：
+1. 改进句子结构，使其更自然、更易于理解。
+2. 纠正任何语法错误或不规范的表达。
+3. 确保段落之间的过渡平滑。
+4. 消除冗余词语，使表达更简洁。
+5. 保持原文的核心意义和语气。
+6. 目标语言是：{{ target_language | default('中文') }}
+
+## 待编辑内容：
+{{ text_content }}
+
+请直接返回编辑后的内容，不要包含任何解释或额外信息。
+"""

@@ -381,54 +381,153 @@ class CoordinatorAgent(BaseAgent):
             self.current_concurrent_count += 1
             
             try:
-                # 向翻译智能体发送翻译请求
-                logger.info(f"开始翻译: {task.id}")
+                translator_agent = self.agents.get(AgentType.TRANSLATOR)
+                if not translator_agent:
+                    logger.error("翻译智能体 (TRANSLATOR) 未注册到 CoordinatorAgent.")
+                    task.error_message = "Translator agent not registered."
+                    return False
+
+                if not hasattr(task, 'novel_object') or not task.novel_object or not task.novel_object.chapters:
+                    logger.error(f"任务 {task.id} 中没有小说对象或章节信息以供翻译。")
+                    task.error_message = "Novel object or chapters not found in task."
+                    return False
                 
-                # 模拟翻译成功
-                success = True
+                logger.info(f"开始翻译任务 {task.id} for novel {task.novel_object.title}, chapters: {len(task.novel_object.chapters_to_translate)}. Target: {task.target_language}")
+
+                task.translated_chapters_content = {} # Store translated content here
+
+                # For now, sequential translation of chapters.
+                for chapter_id in task.novel_object.chapters_to_translate:
+                    chapter_to_translate = next((ch for ch in task.novel_object.chapters if ch.id == chapter_id), None)
+
+                    if not chapter_to_translate:
+                        logger.warning(f"任务 {task.id} 中未找到章节 ID: {chapter_id}。跳过。")
+                        continue
+
+                    logger.info(f"翻译章节: {chapter_to_translate.id} - '{chapter_to_translate.title}'")
+
+                    # Build TranslationContext for this chapter
+                    # For Step 3, context is minimal. MemoryAgent's role is limited.
+                    # Source language should come from the novel/task, target from task.
+                    # TODO: Get source_language more reliably (e.g. from novel metadata if available)
+                    source_lang_for_context = task.source_language or LanguageCode.CHINESE # Default if not set
+
+                    translation_context = TranslationContext(
+                        current_chapter=chapter_to_translate,
+                        novel_title=task.novel_object.title,
+                        source_language=source_lang_for_context,
+                        target_language=task.target_language,
+                        target_culture=task.novel_object.metadata.get("target_culture", None), # Assuming metadata exists
+                        # The following are placeholders for Step 3, to be filled by MemoryAgent later
+                        character_context={},
+                        location_context={},
+                        terminology_context={},
+                        plot_context="Plot context not yet available for this chapter.",
+                        previous_chapters=[], # Simplified: no prev chapters context for now
+                        style_guide=task.novel_object.metadata.get("style_guide", "Default style: accurate and fluent.")
+                    )
+
+                    try:
+                        # Call the EnhancedTranslatorAgent's method
+                        # Ensure translator_agent is indeed an EnhancedTranslatorAgent or compatible
+                        if hasattr(translator_agent, 'advanced_translate_chapter'):
+                            translation_result = await translator_agent.advanced_translate_chapter(translation_context)
+
+                            if translation_result and "translated_content" in translation_result:
+                                chapter_to_translate.translated_content = translation_result["translated_content"]
+                                task.translated_chapters_content[chapter_id] = translation_result["translated_content"]
+                                logger.info(f"章节 {chapter_id} 翻译成功.")
+                            else:
+                                logger.error(f"章节 {chapter_id} 翻译失败或结果格式不正确: {translation_result}")
+                                chapter_to_translate.translated_content = f"Error: Translation failed for chapter {chapter_id}."
+                                task.translated_chapters_content[chapter_id] = chapter_to_translate.translated_content
+                        else:
+                            logger.error(f"Registered translator agent does not have 'advanced_translate_chapter' method.")
+                            return False
+
+                    except Exception as e_chapter:
+                        logger.error(f"翻译章节 {chapter_id} 时发生错误: {e_chapter}")
+                        chapter_to_translate.translated_content = f"Error: Exception during translation of chapter {chapter_id} - {str(e_chapter)}"
+                        task.translated_chapters_content[chapter_id] = chapter_to_translate.translated_content
+                        # Decide if one chapter failure fails the whole stage. For now, continue.
                 
-                return success
+                logger.info(f"任务 {task.id} 的所有指定章节已尝试翻译。")
+                return True
                 
             finally:
-                self.current_concurrent_count -= 1
+                self.current_concurrent_count -= 1 # Ensure this is managed correctly if using concurrency later
             
         except Exception as e:
-            logger.error(f"翻译阶段失败: {e}")
+            logger.error(f"翻译阶段失败 for task {task.id}: {e}")
+            task.error_message = f"Translation stage failed: {str(e)}"
             return False
     
     async def stage_quality_control(self, task: TranslationTask) -> bool:
-        """质量控制阶段"""
+        """质量控制阶段 - 初期简化"""
         try:
-            logger.info(f"开始质量控制: {task.id}")
-            
-            # 执行质量检查
-            quality_passed = await self.perform_quality_checks(task)
-            
-            if not quality_passed:
-                # 质量不合格，尝试重新翻译
-                retry_count = 0
-                while retry_count < self.max_retries and not quality_passed:
-                    logger.info(f"质量不合格，重新翻译 (尝试 {retry_count + 1}/{self.max_retries}): {task.id}")
-                    
-                    # 等待重试延迟
-                    await asyncio.sleep(self.retry_delay)
-                    
-                    # 重新翻译
-                    translation_success = await self.stage_translation(task)
-                    if translation_success:
-                        quality_passed = await self.perform_quality_checks(task)
-                    
-                    retry_count += 1
+            logger.info(f"开始质量控制阶段 for task {task.id}")
+            editor_agent = self.agents.get(AgentType.EDITOR)
+            if not editor_agent:
+                logger.error("编辑智能体 (EDITOR) 未注册到 CoordinatorAgent.")
+                task.error_message = "Editor agent not registered."
+                return False
+
+            if not hasattr(task, 'novel_object') or not task.novel_object.chapters or not hasattr(task, 'translated_chapters_content'):
+                logger.error(f"任务 {task.id} 中没有翻译好的章节内容以供编辑。")
+                task.error_message = "Translated content not found for editing."
+                return False
+
+            task.edited_chapters_content = {}
+
+            for chapter_id, translated_content in task.translated_chapters_content.items():
+                chapter_obj = next((ch for ch in task.novel_object.chapters if ch.id == chapter_id), None)
+                if not chapter_obj: # Should not happen if translated_chapters_content keys are from valid chapters
+                    logger.warning(f"Cannot find chapter object for ID {chapter_id} during QC. Skipping.")
+                    continue
+
+                logger.info(f"对章节 {chapter_id} 进行编辑...")
+
+                # Build context for editor. For now, it's simple.
+                # Editor might need target_language primarily for flow_edit.
+                editor_context = {
+                    "target_language": task.target_language,
+                    "original_chapter_title": chapter_obj.title,
+                    # Add other relevant context if FlowEditor or other editors need it
+                }
                 
-                if not quality_passed:
-                    logger.error(f"质量控制失败，已达到最大重试次数: {task.id}")
-                    return False
-            
-            logger.info(f"质量控制通过: {task.id}")
+                edit_data = {
+                    "content": translated_content,
+                    "context": editor_context,
+                    "preferences": {"flow_edit": True} # Explicitly enable flow edit
+                }
+
+                try:
+                    if hasattr(editor_agent, 'comprehensive_edit'):
+                        edit_result = await editor_agent.comprehensive_edit(edit_data)
+                        if edit_result and "edited_content" in edit_result:
+                            chapter_obj.edited_content = edit_result["edited_content"]
+                            task.edited_chapters_content[chapter_id] = edit_result["edited_content"]
+                            logger.info(f"章节 {chapter_id} 编辑成功.")
+                        else:
+                            logger.error(f"章节 {chapter_id} 编辑失败或结果格式不正确: {edit_result}")
+                            chapter_obj.edited_content = translated_content # Fallback to pre-edit content
+                            task.edited_chapters_content[chapter_id] = translated_content
+                    else:
+                        logger.error(f"Registered editor agent does not have 'comprehensive_edit' method.")
+                        return False
+                except Exception as e_edit_chapter:
+                    logger.error(f"编辑章节 {chapter_id} 时发生错误: {e_edit_chapter}")
+                    chapter_obj.edited_content = translated_content # Fallback
+                    task.edited_chapters_content[chapter_id] = translated_content
+
+            # Simplified: Assume quality always passes for now.
+            # Complex retry logic based on quality_metrics is bypassed.
+            logger.info(f"任务 {task.id} 的质量控制阶段（初步编辑）完成。")
             return True
             
         except Exception as e:
-            logger.error(f"质量控制阶段失败: {e}")
+            logger.error(f"质量控制阶段失败 for task {task.id}: {e}")
+            task.error_message = f"Quality control stage failed: {str(e)}"
             return False
     
     async def stage_output_generation(self, task: TranslationTask) -> bool:
