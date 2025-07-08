@@ -42,6 +42,10 @@ supported_languages:
   - code: "ar"
     name: "Arabic"
     culture: "Middle Eastern"
+  - code: "zh" # Added Chinese for completeness as a target culture
+    name: "Chinese"
+    culture: "Chinese"
+
 
 # 文档处理配置
 document:

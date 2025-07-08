@@ -159,72 +159,79 @@ class EnhancedTranslatorAgent(BaseAgent):
             logger.info(f"开始高级翻译章节: {context.current_chapter.title}")
             
             # 动态上下文管理
-            enhanced_context = await self.context_manager.enhance_context(context)
+            enhanced_context = await self.context_manager.enhance_context(context) # Placeholder for now
             
-            # 多策略翻译
-            strategy_results = await self.multi_strategy_translate_internal(enhanced_context)
+            # 多策略翻译 - Simplified for Step 1: Use only one basic strategy (e.g., "semantic" or rely on the comprehensive prompt)
+            # The change in execute_strategy_translation already uses a comprehensive base_translation prompt.
+            # So, multi_strategy_translate_internal will effectively use that one prompt.
+            # We'll just pick one strategy name like "semantic" to represent this.
+            strategy_results = await self.multi_strategy_translate_internal(enhanced_context, use_single_strategy="semantic")
             
-            # 智能策略融合
-            fused_translation = await self.fuse_translation_strategies(strategy_results, enhanced_context)
+            # 智能策略融合 - Simplified for Step 1: Just take the result from the single strategy
+            # fused_translation = await self.fuse_translation_strategies(strategy_results, enhanced_context)
+            translated_content = strategy_results.get("semantic", context.current_chapter.content) # Fallback to original if semantic fails
             
-            # 深度文化适配
+            # 深度文化适配 - Call a very basic version
             culturally_adapted = await self.cultural_adapter.deep_adapt(
-                fused_translation, enhanced_context
+                translated_content, enhanced_context
             )
             
-            # 对话优化
-            dialogue_optimized = await self.dialogue_optimizer.optimize_dialogues(
-                culturally_adapted, enhanced_context
-            )
-            
-            # 风格迁移
-            style_transferred = await self.style_transfer.transfer_style(
-                dialogue_optimized, enhanced_context
-            )
-            
-            # 术语一致性保证
-            terminology_consistent = await self.terminology_manager.ensure_consistency(
-                style_transferred, enhanced_context
-            )
-            
-            # 高级质量评估
+            # 对话优化 - Stubbed for Step 1
+            # dialogue_optimized = await self.dialogue_optimizer.optimize_dialogues(
+            # culturally_adapted, enhanced_context
+            # )
+            dialogue_optimized = culturally_adapted # Pass through
+
+            # 风格迁移 - Stubbed for Step 1
+            # style_transferred = await self.style_transfer.transfer_style(
+            # dialogue_optimized, enhanced_context
+            # )
+            style_transferred = dialogue_optimized # Pass through
+
+            # 术语一致性保证 - Stubbed for Step 1
+            # terminology_consistent = await self.terminology_manager.ensure_consistency(
+            # style_transferred, enhanced_context
+            # )
+            terminology_consistent = style_transferred # Pass through
+
+            # 高级质量评估 - Stubbed for Step 1: Return mock data
             quality_metrics = await self.quality_assessor.comprehensive_assess(
                 context.current_chapter.content,
-                terminology_consistent,
+                terminology_consistent, # This is the final translated content for now
                 enhanced_context
-            )
-            
-            # 自适应优化
-            if quality_metrics["overall_score"] < 8.0:
-                terminology_consistent = await self.adaptive_improve_translation(
-                    terminology_consistent, quality_metrics, enhanced_context
-                )
-                
-                # 重新评估
-                quality_metrics = await self.quality_assessor.comprehensive_assess(
-                    context.current_chapter.content,
-                    terminology_consistent,
-                    enhanced_context
-                )
-            
-            # 保存到翻译记忆
-            await self.translation_memory.save_translation(
-                context.current_chapter.content,
-                terminology_consistent,
-                enhanced_context,
-                quality_metrics
-            )
+            ) # This will return mock data as per its current implementation
+
+            # 自适应优化 - Skipped for Step 1
+            # if quality_metrics["overall_score"] < 8.0:
+            #     terminology_consistent = await self.adaptive_improve_translation(
+            #         terminology_consistent, quality_metrics, enhanced_context
+            #     )
+            #     quality_metrics = await self.quality_assessor.comprehensive_assess(
+            #         context.current_chapter.content,
+            #         terminology_consistent,
+            #         enhanced_context
+            #     )
+
+            final_translated_content = terminology_consistent
+
+            # 保存到翻译记忆 - Placeholder for Step 1
+            # await self.translation_memory.save_translation(
+            # context.current_chapter.content,
+            # final_translated_content,
+            # enhanced_context,
+            # quality_metrics
+            # )
             
             result = {
                 "chapter_id": context.current_chapter.id,
                 "original_content": context.current_chapter.content,
-                "translated_content": terminology_consistent,
+                "translated_content": final_translated_content,
                 "target_language": context.target_language,
-                "translation_strategies_used": [s.name for s in self.translation_strategies],
-                "quality_metrics": quality_metrics,
-                "cultural_adaptations": await self.get_cultural_adaptations_summary(enhanced_context),
-                "terminology_mappings": await self.terminology_manager.get_mappings(enhanced_context),
-                "style_analysis": await self.style_transfer.get_style_analysis(enhanced_context),
+                "translation_strategies_used": ["semantic_via_base_template"], # Simplified
+                "quality_metrics": quality_metrics, # Mock data from assessor
+                "cultural_adaptations": "Basic cultural adaptation attempted.", # Placeholder
+                "terminology_mappings": {}, # Placeholder
+                "style_analysis": {}, # Placeholder
                 "translation_metadata": {
                     "translator": self.agent_type,
                     "timestamp": datetime.now().isoformat(),
@@ -263,11 +270,45 @@ class EnhancedTranslatorAgent(BaseAgent):
                 
                 strategy_results[strategy.name] = translated_content
             
+            # If use_single_strategy is specified, only run that one.
+            # Otherwise, run all strategies in self.translation_strategies.
+            # For Step 1, we are simplifying to use a single comprehensive prompt via execute_strategy_translation.
+            strategies_to_run = []
+            if use_single_strategy:
+                selected_strategy = next((s for s in self.translation_strategies if s.name == use_single_strategy), None)
+                if selected_strategy:
+                    strategies_to_run.append(selected_strategy)
+                else:
+                    logger.warning(f"Specified single strategy '{use_single_strategy}' not found. Defaulting to first available.")
+                    if self.translation_strategies:
+                         strategies_to_run.append(self.translation_strategies[0])
+            else:
+                strategies_to_run = self.translation_strategies
+
+            if not strategies_to_run:
+                logger.error("No translation strategies available to run.")
+                return {"error": "No translation strategies configured"}
+
+            for strategy in strategies_to_run:
+                # 根据策略调整翻译参数
+                translation_params = await self.adjust_params_for_strategy(strategy, context)
+
+                # 执行翻译
+                translated_content = await self.execute_strategy_translation(
+                    context.current_chapter.content,
+                    strategy, # Strategy object is passed, but execute_strategy_translation currently uses a generic prompt
+                    translation_params,
+                    context
+                )
+
+                strategy_results[strategy.name] = translated_content
+
             return strategy_results
             
         except Exception as e:
             logger.error(f"多策略翻译失败: {e}")
-            raise
+            # Raise or return an error structure
+            return {"error": f"Multi-strategy translation failed: {str(e)}"} # Return error dict
     
     async def adjust_params_for_strategy(self, strategy: TranslationStrategy, 
                                        context: TranslationContext) -> Dict[str, Any]:
@@ -320,17 +361,75 @@ class EnhancedTranslatorAgent(BaseAgent):
             ]
             
             # 调用LLM
-            translated = await self.call_llm(messages, **params)
+            # translated = await self.call_llm(messages, **params) # Original call
+
+            # Using the base_translation prompt from translation_templates
+            # Ensure translation_templates is imported and available
+            from prompts.translation_templates import get_translation_prompt
+
+            # Prepare data for the base_translation template
+            # Assuming context has all necessary fields like current_chapter, target_language, etc.
+            # Also, character_context, location_context etc. might be part of TranslationContext
+            # or need to be fetched/passed appropriately.
+            # For now, we'll pass what's directly available or use placeholders.
+
+            # Helper to get display names for languages
+            def get_lang_display_name(lang_code_obj_or_str):
+                # Handles both LanguageCode enum and string
+                lang_code_str = lang_code_obj_or_str.value if hasattr(lang_code_obj_or_str, 'value') else str(lang_code_obj_or_str)
+                names = {
+                    "zh": "中文",
+                    "en": "English",
+                    "ja": "日语",
+                    "ko": "韩语",
+                    "fr": "Français",
+                    "de": "Deutsch",
+                    "es": "Español",
+                    # Add more as needed, or make this a class/static method
+                }
+                return names.get(lang_code_str, lang_code_str) # Fallback to code if no display name
+
+            template_data = {
+                "source_language_display_name": get_lang_display_name(context.source_language),
+                "target_language_display_name": get_lang_display_name(context.target_language),
+                "target_language": context.target_language, # Still useful for other parts of prompt if not displayed
+                "target_culture": context.target_culture or "Unknown",
+                "source_content": content,
+                "character_context": context.character_context or {},
+                "location_context": context.location_context or {},
+                "terminology_context": context.terminology_context or {},
+                "plot_context": context.plot_context or "",
+                "previous_chapters": context.previous_chapters or [],
+                "style_guide": context.style_guide or "保持原文风格和情感，确保翻译流畅自然。"
+            }
+
+            # We are using a generic prompt now, so strategy-specific prompts are bypassed for this step.
+            # The 'base_translation' prompt is quite comprehensive.
+            rendered_prompt_content = get_translation_prompt("base_translation", **template_data)
+
+            # The base_translation template generates a full prompt including instructions.
+            # We can use this as the user message. The system message can be simpler.
+
+            # For the call_llm method, messages should be a list of dicts, e.g., [{"role": "user", "content": "Translate this"}]
+            # The base_translation_template already includes a lot of instructions.
+            # We will make the system prompt generic here.
+
+            final_messages = [
+                {"role": "system", "content": f"You are a professional novel translator. Translate the given text into {context.target_language} following all provided instructions and context."},
+                {"role": "user", "content": rendered_prompt_content} # The template output is the user content
+            ]
+
+            translated = await self.call_llm(final_messages, **params)
             
             return translated
             
         except Exception as e:
             logger.error(f"执行策略翻译失败: {e}")
-            return content
+            return content # Return original content on error
     
     async def build_strategy_prompt(self, content: str, strategy: TranslationStrategy,
                                   context: TranslationContext) -> Dict[str, str]:
-        """构建策略特定的提示词"""
+        """构建策略特定的提示词 (Currently bypassed by execute_strategy_translation for simplification in Step 1)"""
         try:
             base_system = f"你是一个专业的小说翻译专家，专门使用{strategy.name}翻译策略。"
             
@@ -553,39 +652,100 @@ class EnhancedTranslatorAgent(BaseAgent):
             # 暂时使用硬编码的示例规则
             
             self.cultural_rules = {
-                "zh_to_en": [
+                "zh_to_en": [ # Chinese to English
                     CulturalAdaptationRule(
                         source_culture="Chinese",
                         target_culture="Western",
-                        rule_type="name_adaptation",
-                        pattern=r"([王李张刘陈杨黄赵])([a-zA-Z\u4e00-\u9fff]{1,2})",
-                        replacement=lambda m: self.adapt_chinese_name_to_western(m.group()),
-                        context_conditions=["character_name"]
+                        rule_type="currency_adaptation",
+                        pattern=r"(\d+)\s*元", # Example: 100元
+                        replacement=r"¥\1",    # Example: ¥100
+                        context_conditions=[]
+                    ),
+                    CulturalAdaptationRule(
+                        source_culture="Chinese",
+                        target_culture="Western",
+                        rule_type="name_adaptation_example", # Placeholder for a more complex name adaptation
+                        pattern=r"老王",
+                        replacement=r"Old Wang (or a culturally adapted name)",
+                        context_conditions=["dialogue"]
+                    )
+                ],
+                "en_to_zh": [ # English to Chinese
+                    CulturalAdaptationRule(
+                        source_culture="Western",
+                        target_culture="Chinese",
+                        rule_type="currency_adaptation",
+                        pattern=r"\$(\d+(\.\d{1,2})?)", # Example: $100 or $100.50
+                        replacement=r"\1美元",          # Example: 100美元
+                        context_conditions=[]
+                    ),
+                    CulturalAdaptationRule(
+                        source_culture="Western",
+                        target_culture="Chinese",
+                        rule_type="unit_conversion_example",
+                        pattern=r"(\d+)\s*miles",
+                        replacement=lambda m: f"{int(m.group(1)) * 1.60934:.2f}公里", # Approx conversion
+                        context_conditions=[]
+                    )
+                ],
+                "ja_to_zh": [ # Japanese to Chinese
+                    CulturalAdaptationRule(
+                        source_culture="Japanese",
+                        target_culture="Chinese",
+                        rule_type="honorifics_adaptation_example",
+                        pattern=r"(\w+)さん", # Example: 田中さん
+                        replacement=r"\1先生/女士", # Placeholder, proper adaptation is complex
+                        context_conditions=["dialogue"]
+                    ),
+                    CulturalAdaptationRule(
+                        source_culture="Japanese",
+                        target_culture="Chinese",
+                        rule_type="currency_adaptation",
+                        pattern=r"(\d+)\s*円", # Example: 1000円
+                        replacement=r"\1日元",    # Example: 1000日元
+                        context_conditions=[]
                     )
                 ],
                 "zh_to_ja": [
-                    # 中日文化适配规则
+                    CulturalAdaptationRule(
+                        source_culture="Chinese",
+                        target_culture="Japanese",
+                        rule_type="currency_adaptation",
+                        pattern=r"(\d+)\s*元",
+                        replacement=r"\1元", # Or convert to 円 if rate is known & desired
+                        context_conditions=[]
+                    )
                 ],
                 "zh_to_ko": [
-                    # 中韩文化适配规则
+                     CulturalAdaptationRule(
+                        source_culture="Chinese",
+                        target_culture="Korean",
+                        rule_type="currency_adaptation",
+                        pattern=r"(\d+)\s*元",
+                        replacement=r"\1위안",
+                        context_conditions=[]
+                    )
                 ]
+                # Add more language pairs and rules as needed
             }
             
-            logger.info("文化适配规则加载完成")
+            logger.info(f"文化适配规则加载完成. 加载的规则集数量: {len(self.cultural_rules)}")
             
         except Exception as e:
             logger.error(f"加载文化适配规则失败: {e}")
     
-    def adapt_chinese_name_to_western(self, chinese_name: str) -> str:
-        """将中文名字适配为西方名字"""
-        # 这里实现具体的名字适配逻辑
-        # 可以基于音译、意译或完全本土化
-        name_mapping = {
-            "王明": "William Wang",
-            "李华": "Lisa Lee",
-            "张伟": "David Zhang"
-        }
-        return name_mapping.get(chinese_name, chinese_name)
+    # This specific adaptation function might be too specific or better handled by LLM/general rules.
+    # For now, removing it as direct regex/lambda in rules is more flexible for simple cases.
+    # def adapt_chinese_name_to_western(self, chinese_name: str) -> str:
+    #     """将中文名字适配为西方名字"""
+    #     # 这里实现具体的名字适配逻辑
+    #     # 可以基于音译、意译或完全本土化
+    #     name_mapping = {
+    #         "王明": "William Wang",
+    #         "李华": "Lisa Lee",
+    #         "张伟": "David Zhang"
+    #     }
+    #     return name_mapping.get(chinese_name, chinese_name)
     
     async def build_context_info(self, context: TranslationContext) -> str:
         """构建上下文信息"""
@@ -763,8 +923,47 @@ class DeepCulturalAdapter:
         pass
     
     async def deep_adapt(self, content: str, context: TranslationContext) -> str:
-        """深度文化适配"""
-        return content
+        """深度文化适配 - 初步实现"""
+        logger.info(f"开始初步文化适配: {context.current_chapter.id if context.current_chapter else 'N/A'}")
+        adapted_content = content
+
+        # Construct rule key, e.g., "zh_to_en"
+        # Assuming context.source_language and context.target_language are LanguageCode enums or strings
+        source_lang_code = context.source_language.value if hasattr(context.source_language, 'value') else str(context.source_language)
+        target_lang_code = context.target_language.value if hasattr(context.target_language, 'value') else str(context.target_language)
+
+        rule_key = f"{source_lang_code}_to_{target_lang_code}"
+
+        if rule_key in self.cultural_rules:
+            rules_for_pair = self.cultural_rules[rule_key]
+            logger.debug(f"应用文化规则集 {rule_key}，共 {len(rules_for_pair)} 条规则。")
+
+            for rule in rules_for_pair:
+                try:
+                    # Simple pattern replacement for now.
+                    # More complex rules might need LLM intervention or specific handlers.
+                    if isinstance(rule.replacement, str):
+                        adapted_content = re.sub(rule.pattern, rule.replacement, adapted_content)
+                        logger.debug(f"应用规则: {rule.pattern} -> {rule.replacement}")
+                    elif callable(rule.replacement):
+                        # If replacement is a function, call it.
+                        # This is useful for more complex, regex-based replacements with groups.
+                        adapted_content = re.sub(rule.pattern, rule.replacement, adapted_content)
+                        logger.debug(f"应用函数规则: {rule.pattern}")
+                    # TODO: Add LLM-based adaptation for more complex rules if needed in future steps.
+                except Exception as e:
+                    logger.error(f"应用文化规则失败 {rule.pattern}: {e}")
+        else:
+            logger.info(f"没有找到针对 {rule_key} 的特定文化规则。")
+
+        # Fallback or generic adaptation if no specific rules applied or further refinement needed
+        # For Step 1, this is kept simple. Future steps might involve LLM calls here.
+        if adapted_content == content and rule_key not in self.cultural_rules : # only log if no rules were found AND content is unchanged
+             logger.info(f"文化适配未修改内容 (可能无适用规则 for {rule_key}).")
+        elif adapted_content != content:
+            logger.info("文化适配已修改内容。")
+
+        return adapted_content
     
     async def cleanup(self):
         """清理资源"""
